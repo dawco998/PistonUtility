@@ -1,0 +1,30 @@
+
+--- Analiza przedziału 1750 - 2000 RPM ---
+Ilość próbek przed: 26, po: 23
+
+Średnie wysterowanie N75 (VBCV %):
+  Przed: 53.80 %
+  Po:    55.53 %
+  Różnica: 1.73 %
+
+Średnie ciśnienie doładowania MAP (kPa):
+  Przed: 226.92 kPa
+  Po:    241.04 kPa
+  Różnica: 14.12 kPa
+
+Średni przepływ MAF (g/s):
+  Przed: 58.15 g/s
+  Po:    64.93 g/s
+  Różnica: 6.79 g/s
+
+--- Szczegóły co 50 RPM (1700 - 2050) ---
+RPM        | VBCV Przed   | VBCV Po      | MAP Przed    | MAP Po      
+-----------------------------------------------------------------
+1700-1750 |      57.03 % |      67.26 % |     227 kPa |     231 kPa
+1750-1800 |      51.95 % |      62.48 % |     228 kPa |     234 kPa
+1800-1850 |      55.43 % |      57.62 % |     226 kPa |     240 kPa
+1850-1900 |      55.47 % |      54.04 % |     225 kPa |     244 kPa
+1900-1950 |      54.00 % |      51.52 % |     227 kPa |     245 kPa
+1950-2000 |      51.53 % |      49.20 % |     229 kPa |     244 kPa
+2000-2050 |      49.32 % |      47.91 % |     231 kPa |     241 kPa
+2050-2100 |      48.75 % |      48.00 % |     232 kPa |     237 kPa

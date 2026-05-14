@@ -1,0 +1,53 @@
+WYNIK ANALIZY JEDNOSTEK:
+========================
+
+NM_TO_IQ:
+  Os X (RPM): rpm (bezposrednio)
+  Os Y (NM):  Nm * 10 (tzn. 3000 = 300 Nm)
+  Wartosci:   mm3/suw (objętosciowa dawka paliwa)
+
+Rail Pressure Map:
+  Os X (RPM): rpm (bezposrednio)
+  Os Y (mg/str): mm3/suw * 100 (tzn. 4000 = 40 mm3/suw)
+  Wartosci:   bar (cisnienie rail)
+
+Duration Map:
+  Os X (Rail Press): bar (bezposrednio, 17000 = 1700 bar)
+  WAIT - Rail axis: 1190,1200,2000,...,17000
+  Jesli bezposrednio bar: 1190 bar, 1200 bar... to nie ma sensu bo sa dwa wpisy bliskie
+  1190 to raczej tez * 0.1? 119 bar? Za malo.
+  Rail axis: bar/10? 1190=119bar? Za malo. Nie.
+  Rail axis = bar bezposrednio: 1190, 1200 -> hmm, 1190 to min (idle) a 1200 to pierwszy sensowny.
+  TAK - to bar bezposrednio. 1190 bar to minimum (wiersz samych zer).
+
+  Os Y (IQ): mm3/suw * 100 (tzn. 3400 = 34 mm3/suw)
+  Wartosci: mikrosekundy (czas otwarcia wtryskiwacza)
+
+NM Limiter:
+  Os: RPM
+  Wartosci: Nm (bezposrednio)
+
+=== WERYFIKACJA Z LOGIEM ===
+
+RPM=2000, Torque=292 Nm (os=2920):
+  IQ z mapy = 52.9 mm3/suw (44.2 mg)
+  IQ na osi Rail = 5291 (max osi = 4000)
+  !!! DAWKA PRZEKRACZA MAPE RAIL o 12.9 mm3/suw !!!
+  Sterownik ekstrapoluje lub saturuje na ostatniej wartosci (4000 -> 1337 bar)
+
+  Rail z logu FRP = 1288 bar
+  Rail z mapy (max os) = 1337 bar (wartosc przy IQ=40mm3, RPM=2000)
+
+  Duration przy Rail=1700bar, IQ=5291: 1081 us
+  Duration przy Rail=1400bar, IQ=5291: 1215 us
+  Roznica: 134 us (1700 bar jest 11.0% krotszy)
+
+=== OBLICZENIA DAWKI vs DOLADOWANIE vs LAMBDA ===
+
+RPM=1750: Target=300Nm | IQ=54.7mm3 (45.7mg) | Air=941mg/suw | MAF=54.9g/s | AFR=20.6 | Lambda=1.42
+RPM=2000: Target=315Nm | IQ=57.9mm3 (48.4mg) | Air=941mg/suw | MAF=62.7g/s | AFR=19.4 | Lambda=1.34
+RPM=2250: Target=315Nm | IQ=58.9mm3 (49.1mg) | Air=941mg/suw | MAF=70.5g/s | AFR=19.1 | Lambda=1.32
+RPM=2500: Target=315Nm | IQ=60.0mm3 (50.1mg) | Air=885mg/suw | MAF=73.8g/s | AFR=17.7 | Lambda=1.22
+RPM=2750: Target=315Nm | IQ=61.4mm3 (51.3mg) | Air=885mg/suw | MAF=81.1g/s | AFR=17.3 | Lambda=1.19
+RPM=3000: Target=315Nm | IQ=62.8mm3 (52.4mg) | Air=863mg/suw | MAF=86.3g/s | AFR=16.5 | Lambda=1.14
+RPM=3250: Target=315Nm | IQ=64.2mm3 (53.6mg) | Air=863mg/suw | MAF=93.5g/s | AFR=16.1 | Lambda=1.11
