@@ -3,7 +3,7 @@ Program for ECU tuners for complex calculations.
 
 
 tasks:
-1. Synchronizacja Symulatora z Mapami Ori bez logow, oraz mapy MOD ktore sa spojne z logami forscan. Mozlwosc przelaczania map w symulatorze dla analizy.
+1. Synchronizacja Symulatora z MAPY ORI bez logow, oraz MAPY MOD ktore sa spojne z logami forscan. Mozlwosc przelaczania map w symulatorze dla analizy.
 2. Dodanie automatycznego convertera dawek do nm na suwaku dawki korzystajac z NM to IQ map (widocznosc jaka wartosc nm z mapy nm to iq wskazuje dana dawka)
 3. Pokazywanie AirfuelRatio, Warning po przekroczeniu lambda 1.14
 4. Sprawdzenie modelu calej fizyki, funkcja Wiebego, Zmienne właściwości gazu z uwzgledniejem skladu mieszanki, wlasciwosci i dynamika wtryskiwacza  i w razie bledow poprawa
