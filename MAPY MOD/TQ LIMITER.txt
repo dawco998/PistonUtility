@@ -1,0 +1,22 @@
+curve for normal engine speed limitation (inner engine torque) (1x16)
+
+torque(average engine speed,rpm)/Nm
+
+		rpm
+		1000.00
+r/min	1000	 143.3
+	1250	 200.4
+	1500	 275.0
+	1750	 300.0
+	2000	 325.0
+	2250	 345.0
+	2500	 350.0
+	2750	 345.0
+	3000	 329.0
+	3250	 319.0
+	3500	 309.0
+	3750	 298.0
+	4000	 285.0
+	4250	 280.0
+	5100	 0.0
+	5200	 0.0
