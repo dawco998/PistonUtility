@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DV6 TED4 — Cylinder Piston Simulation + ECU Maps</title>
+    <meta name="description" content="Real-time piston and injection timing simulation for PSA DV6 TED4 1.6 HDi — with live ECU Duration/Rail/SOI maps">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header id="app-header">
+        <div class="header-left">
+            <div class="logo-icon">⚙</div>
+            <div class="header-titles">
+                <h1>DV6 TED4 <span class="accent">Piston Simulator</span></h1>
+                <p class="subtitle">EDC16C3 Single Injection • 1.6 HDi 109HP • Real-Time Physics</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="rpm-display" id="rpm-display">
+                <span class="rpm-value" id="rpm-value-display">2000</span>
+                <span class="rpm-unit">RPM</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-main">
+        <!-- LEFT: CONTROLS -->
+        <aside id="controls-panel">
+            <div class="panel-title">Parametry Wtrysku</div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-text">🪵 Pedal gazu</span>
+                    <span class="label-value" id="val-pedal">0 %</span>
+                </label>
+                <input type="range" id="ctrl-pedal" min="0" max="100" value="0" step="1" class="slider slider-pedal" style="--c1:#ff9800;--c2:#ff5722">
+                <div class="control-note" style="color:#ff9800;font-size:10px">Mapa: Pedal% × RPM → IQ (z WinOLS)</div>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-text">Obroty silnika</span>
+                    <span class="label-value" id="val-rpm">2000 RPM</span>
+                </label>
+                <input type="range" id="ctrl-rpm" min="750" max="4500" value="2000" step="50" class="slider slider-rpm">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-text">Dawka paliwa</span>
+                    <span class="label-value" id="val-fuel">25.0 mg</span>
+                </label>
+                <input type="range" id="ctrl-fuel" min="3" max="60" value="25" step="0.5" class="slider slider-fuel">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-text">SOI (Start of Injection)</span>
+                    <span class="label-value" id="val-soi">8.0° BTDC</span>
+                </label>
+                <input type="range" id="ctrl-soi" min="-5" max="30" value="8" step="0.5" class="slider slider-soi">
+                <div class="control-note">EDC16C3: single injection only</div>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-text">Boost (gauge)</span>
+                    <span class="label-value" id="val-boost">1.0 bar</span>
+                </label>
+                <input type="range" id="ctrl-boost" min="0" max="2.0" value="1.0" step="0.05" class="slider slider-boost">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-text">Rail Pressure</span>
+                    <span class="label-value" id="val-rail">1000 bar</span>
+                </label>
+                <input type="range" id="ctrl-rail" min="250" max="1600" value="1000" step="10" class="slider slider-rail">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span class="label-text">T intake</span>
+                    <span class="label-value" id="val-tintake">40 °C</span>
+                </label>
+                <input type="range" id="ctrl-tintake" min="10" max="80" value="40" step="1" class="slider slider-temp">
+            </div>
+
+            <!-- ECU MAPS TOGGLE -->
+            <div class="control-group" style="margin-top:8px;border-top:1px solid #2a3050;padding-top:10px">
+                <label style="cursor:pointer;display:flex;align-items:center;gap:8px">
+                    <input type="checkbox" id="ctrl-ecu-maps" style="width:18px;height:18px;accent-color:#00e676">
+                    <span class="label-text" style="color:#00e676;font-weight:700">🗺️ Use ECU Maps</span>
+                </label>
+                <div class="control-note" style="color:#8892b0;font-size:11px;margin-top:4px">
+                    Pedal% + RPM → IQ → Rail → Duration → SOI
+                </div>
+                </div>
+            </div>
+
+            <!-- ECU MAP DATA (shown when toggle on) -->
+            <div id="ecu-map-panel" style="display:none;margin-top:8px;padding:8px;background:#0d1020;border:1px solid #1a2040;border-radius:6px;font-size:11px">
+                <div style="color:#4facfe;font-weight:600;margin-bottom:6px">📊 ECU Map Lookup</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;color:#8892b0">
+                    <span>Pedal:</span><span id="ecu-pedal" style="color:#ff9800;text-align:right;font-weight:600">--</span>
+                    <span>NM Limit:</span><span id="ecu-nm" style="color:#e8eaf6;text-align:right">--</span>
+                    <span>IQ (mm³/str):</span><span id="ecu-iq" style="color:#e8eaf6;text-align:right">--</span>
+                    <span>IQ (mg/str):</span><span id="ecu-iqmg" style="color:#e8eaf6;text-align:right">--</span>
+                    <span>Rail (map):</span><span id="ecu-rail-map" style="color:#e8eaf6;text-align:right">--</span>
+                    <span>Duration:</span><span id="ecu-dur" style="color:#e8eaf6;text-align:right">--</span>
+                    <span>Inj. Delay:</span><span id="ecu-injdel" style="color:#e8eaf6;text-align:right">--</span>
+                    <span>SOI (ORI map):</span><span id="ecu-soi-map" style="color:#00e676;text-align:right">--</span>
+                    <span>EOI result:</span><span id="ecu-eoi" style="color:#ff9800;text-align:right;font-weight:600">--</span>
+                    <span>Boost (log):</span><span id="ecu-boost" style="color:#e8eaf6;text-align:right">--</span>
+                </div>
+            </div>
+
+            <!-- PRESETS -->
+            <div class="presets-row">
+                <button class="preset-btn" data-preset="idle">Idle</button>
+                <button class="preset-btn" data-preset="cruise">Cruise</button>
+                <button class="preset-btn active" data-preset="maxTq">Max Tq</button>
+                <button class="preset-btn" data-preset="maxPw">Max Pw</button>
+                <button class="preset-btn" data-preset="stage1">Stage1</button>
+            </div>
+
+            <!-- PLAY/PAUSE -->
+            <div class="playback-controls">
+                <button class="play-btn" id="btn-play">▶ Play</button>
+                <button class="speed-btn active" data-speed="0.1">0.1×</button>
+                <button class="speed-btn" data-speed="0.25">0.25×</button>
+                <button class="speed-btn" data-speed="0.5">0.5×</button>
+                <button class="speed-btn" data-speed="1">1×</button>
+            </div>
+
+            <!-- CRANK ANGLE SCRUBBER -->
+            <div class="control-group" style="margin-top:6px;padding:8px;background:#0d1020;border:1px solid #2a3050;border-radius:6px">
+                <label>
+                    <span class="label-text" style="color:#ff4444">⚙ Kąt wału korbowego</span>
+                    <span class="label-value" id="val-crank">0°</span>
+                </label>
+                <input type="range" id="ctrl-crank" min="0" max="720" value="0" step="1" class="slider" style="--c1:#ff4444;--c2:#cc2222">
+                <div style="display:flex;justify-content:space-between;font-size:9px;color:#5a6380;margin-top:2px">
+                    <span>0° TDC</span><span>180°</span><span>360°</span><span>540°</span><span>720°</span>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- CENTER: VISUALIZATION -->
+        <section id="viz-panel">
+            <canvas id="engine-canvas"></canvas>
+        </section>
+
+        <!-- RIGHT: METRICS -->
+        <aside id="metrics-panel">
+            <div class="panel-title">Wyniki Obliczeń</div>
+
+            <div class="metric-section">
+                <div class="metric-section-title">Injection Timing</div>
+                <div class="metric-row">
+                    <span class="metric-label">SOI</span>
+                    <span class="metric-value" id="m-soi">-8.0°</span>
+                    <span class="metric-unit">°ATDC</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">SOC</span>
+                    <span class="metric-value" id="m-soc">--</span>
+                    <span class="metric-unit">°ATDC</span>
+                </div>
+                <div class="metric-row highlight">
+                    <span class="metric-label">EOI</span>
+                    <span class="metric-value" id="m-eoi">--</span>
+                    <span class="metric-unit">°ATDC</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Ign. Delay</span>
+                    <span class="metric-value" id="m-igndelay">--</span>
+                    <span class="metric-unit">ms</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Duration</span>
+                    <span class="metric-value" id="m-duration">--</span>
+                    <span class="metric-unit">µs / °CA</span>
+                </div>
+            </div>
+
+            <div class="metric-section">
+                <div class="metric-section-title">Thermodynamics</div>
+                <div class="metric-row">
+                    <span class="metric-label">P<sub>max</sub></span>
+                    <span class="metric-value" id="m-pmax">--</span>
+                    <span class="metric-unit">bar</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">P<sub>max</sub> @</span>
+                    <span class="metric-value" id="m-pmax-angle" style="font-size:11px">--</span>
+                    <span class="metric-unit"></span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">dp/dθ</span>
+                    <span class="metric-value" id="m-dp">--</span>
+                    <span class="metric-unit">bar/°CA</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">dp/dθ @</span>
+                    <span class="metric-value" id="m-dp-angle" style="font-size:11px">--</span>
+                    <span class="metric-unit"></span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">CA50</span>
+                    <span class="metric-value" id="m-ca50">--</span>
+                    <span class="metric-unit">°ATDC</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">η<sub>th</sub></span>
+                    <span class="metric-value" id="m-eta">--</span>
+                    <span class="metric-unit"></span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">T<sub>max</sub></span>
+                    <span class="metric-value" id="m-tmax">--</span>
+                    <span class="metric-unit">K</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">P<sub>cyl</sub> (live)</span>
+                    <span class="metric-value" id="m-pcyl">--</span>
+                    <span class="metric-unit">bar</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Volume</span>
+                    <span class="metric-value" id="m-vol">--</span>
+                    <span class="metric-unit">cm³</span>
+                </div>
+            </div>
+
+            <div class="metric-section">
+                <div class="metric-section-title">Performance</div>
+                <div class="metric-row">
+                    <span class="metric-label">Torque</span>
+                    <span class="metric-value" id="m-torque">--</span>
+                    <span class="metric-unit">Nm</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Power</span>
+                    <span class="metric-value" id="m-power">--</span>
+                    <span class="metric-unit">kW</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Lambda</span>
+                    <span class="metric-value" id="m-lambda">--</span>
+                    <span class="metric-unit">λ</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">BSFC</span>
+                    <span class="metric-value" id="m-bsfc">--</span>
+                    <span class="metric-unit">g/kWh</span>
+                </div>
+            </div>
+
+            <!-- EOI STATUS -->
+            <div class="eoi-status" id="eoi-status">
+                <div class="eoi-status-label">EOI Status</div>
+                <div class="eoi-status-value" id="eoi-status-text">--</div>
+                <div class="eoi-recommendation" id="eoi-recommendation"></div>
+            </div>
+
+            <!-- PMAX STATUS -->
+            <div class="eoi-status" id="pmax-status">
+                <div class="eoi-status-label">⚠ Pmax Status <span style="font-weight:400;font-size:10px;color:#5a6380">(limit: 160 / 180 bar)</span></div>
+                <div class="eoi-status-value" id="pmax-status-text">--</div>
+                <div class="eoi-recommendation" id="pmax-recommendation"></div>
+            </div>
+
+            <!-- DP/DTHETA STATUS -->
+            <div class="eoi-status" id="dp-status">
+                <div class="eoi-status-label">⚠ dp/dθ Status <span style="font-weight:400;font-size:10px;color:#5a6380">(limit: 8 / 12 bar/°CA)</span></div>
+                <div class="eoi-status-value" id="dp-status-text">--</div>
+                <div class="eoi-recommendation" id="dp-recommendation"></div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- CYLINDER STATUS BAR -->
+    <div id="cyl-status-bar" style="display:flex;justify-content:center;gap:12px;padding:6px 16px;background:#080c18;border-top:1px solid #1a2040;border-bottom:1px solid #1a2040;font-family:'JetBrains Mono',monospace;font-size:11px">
+        <div id="cyl-st-1" class="cyl-status-item" style="display:flex;align-items:center;gap:6px">
+            <span style="color:#4facfe;font-weight:600">CYL1</span>
+            <span id="cyl-angle-1" style="color:#8892b0">--</span>
+            <span id="cyl-inj-1" style="min-width:80px"></span>
+        </div>
+        <div style="color:#2a3050">│</div>
+        <div id="cyl-st-2" class="cyl-status-item" style="display:flex;align-items:center;gap:6px">
+            <span style="color:#4facfe;font-weight:600">CYL2</span>
+            <span id="cyl-angle-2" style="color:#8892b0">--</span>
+            <span id="cyl-inj-2" style="min-width:80px"></span>
+        </div>
+        <div style="color:#2a3050">│</div>
+        <div id="cyl-st-3" class="cyl-status-item" style="display:flex;align-items:center;gap:6px">
+            <span style="color:#4facfe;font-weight:600">CYL3</span>
+            <span id="cyl-angle-3" style="color:#8892b0">--</span>
+            <span id="cyl-inj-3" style="min-width:80px"></span>
+        </div>
+        <div style="color:#2a3050">│</div>
+        <div id="cyl-st-4" class="cyl-status-item" style="display:flex;align-items:center;gap:6px">
+            <span style="color:#4facfe;font-weight:600">CYL4</span>
+            <span id="cyl-angle-4" style="color:#8892b0">--</span>
+            <span id="cyl-inj-4" style="min-width:80px"></span>
+        </div>
+    </div>
+
+    <!-- BOTTOM: P-V DIAGRAM -->
+    <footer id="pv-footer">
+        <canvas id="pv-canvas"></canvas>
+        <canvas id="pressure-canvas"></canvas>
+    </footer>
+
+    <script src="ecu-maps.js"></script>
+    <script src="engine.js"></script>
+</body>
+</html>
